@@ -1,1 +1,220 @@
-クリーンハイプさんの栞っていう曲素敵だよね
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>一緒に過ごす一日</title>
+<style>
+body {
+  margin: 0;
+  font-family: "Hiragino Kaku Gothic ProN", sans-serif;
+  background: #f4f6f8;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+#character {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 120px;
+}
+
+#dialogue {
+  padding: 20px;
+  background: white;
+  border-top: 1px solid #ddd;
+  min-height: 120px;
+}
+
+#choices {
+  padding: 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+button {
+  padding: 10px 15px;
+  border: none;
+  background: #e0e7ff;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #c7d2fe;
+}
+
+input {
+  padding: 10px;
+  width: 200px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="character">🙂</div>
+
+<div id="dialogue"></div>
+
+<div id="choices"></div>
+
+<script>
+let state = {
+  name: "",
+  mood: "",
+  phase: "start",
+  happiness: 50
+};
+
+const dialogue = document.getElementById("dialogue");
+const choices = document.getElementById("choices");
+const character = document.getElementById("character");
+
+function setCharacter(mode){
+  if(mode === "normal") character.textContent = "🙂";
+  if(mode === "study") character.textContent = "📖";
+  if(mode === "rest") character.textContent = "😴";
+  if(mode === "night") character.textContent = "🌙";
+}
+
+function showText(text){
+  dialogue.innerHTML = text;
+}
+
+function showChoices(options){
+  choices.innerHTML = "";
+  options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.textContent = opt.text;
+    btn.onclick = opt.action;
+    choices.appendChild(btn);
+  });
+}
+
+function start(){
+  setCharacter("normal");
+  showText("…あれ<br>来てくれたんだ<br><br>名前、思い出せなくて");
+  choices.innerHTML = `
+    <input id="nameInput" placeholder="名前を入力">
+    <button onclick="setName()">OK</button>
+  `;
+}
+
+function setName(){
+  const input = document.getElementById("nameInput");
+  state.name = input.value || "あなた";
+  showText(state.name + "っていうんだね<br>…ありがとう");
+  showChoices([
+    {text: "次へ", action: askMood}
+  ]);
+}
+
+function askMood(){
+  showText("今日は、どんな感じ？");
+  showChoices([
+    {text: "疲れてる", action: ()=>setMood("tired")},
+    {text: "普通", action: ()=>setMood("normal")},
+    {text: "やれそう", action: ()=>setMood("good")}
+  ]);
+}
+
+function setMood(m){
+  state.mood = m;
+
+  if(m === "tired"){
+    showText("…無理しないでね");
+  } else if(m === "good"){
+    showText("少しやってみる？");
+  } else {
+    showText("軽くでもいいと思う");
+  }
+
+  showChoices([
+    {text: "少しやる", action: study},
+    {text: "休む", action: rest},
+    {text: "やりたいことがある", action: custom}
+  ]);
+}
+
+function study(){
+  setCharacter("study");
+  showText("…一緒にやろうか");
+  state.happiness += (state.mood === "good") ? 10 : -5;
+
+  showChoices([
+    {text: "続ける", action: ()=>endDay()},
+    {text: "やめる", action: rest}
+  ]);
+}
+
+function rest(){
+  setCharacter("rest");
+  showText("…少し休も");
+  state.happiness += (state.mood === "tired") ? 10 : -2;
+
+  showChoices([
+    {text: "落ち着いた", action: endDay}
+  ]);
+}
+
+function custom(){
+  showText("何する？");
+  choices.innerHTML = `
+    <input id="customInput" placeholder="例：英語10分">
+    <button onclick="doCustom()">OK</button>
+  `;
+}
+
+function doCustom(){
+  const val = document.getElementById("customInput").value;
+  setCharacter("study");
+  showText(val + "、いいね");
+  state.happiness += 5;
+
+  showChoices([
+    {text: "終わる", action: endDay}
+  ]);
+}
+
+function endDay(){
+  setCharacter("night");
+
+  showText("…おかえり<br>今日はどんな日だった？");
+
+  choices.innerHTML = `
+    <input id="reflection" placeholder="自由に書いてもOK">
+    <button onclick="night2()">OK</button>
+  `;
+}
+
+function night2(){
+  showText("…ひとつでも、よかったこと思い出せそう？");
+
+  choices.innerHTML = `
+    <input id="good" placeholder="なくても大丈夫">
+    <button onclick="finish()">OK</button>
+  `;
+}
+
+function finish(){
+  let msg = "…今日はこれでいいと思う";
+
+  if(state.happiness > 60){
+    msg += "<br>ちょっと、よかったね";
+  } else if(state.happiness < 40){
+    msg += "<br>ゆっくり休もう";
+  }
+
+  showText(msg + "<br>おやすみ");
+  choices.innerHTML = "";
+}
+
+start();
+</script>
+
+</body>
+</html>
