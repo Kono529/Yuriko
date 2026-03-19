@@ -1,99 +1,95 @@
-import sys
-import time
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>恋のムズムズ！〜君は僕の抗原〜</title>
+    <style>
+        body { background-color: #fdf5e6; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        #game-container { background: white; width: 600px; padding: 20px; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.1); border: 3px solid #ffd700; }
+        #status { font-size: 0.9em; color: #666; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        #message { height: 120px; font-size: 1.1em; line-height: 1.6; margin-bottom: 20px; }
+        .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        button { padding: 10px; cursor: pointer; border: 1px solid #ffd700; background: #fffdf0; border-radius: 5px; transition: 0.2s; }
+        button:hover { background: #ffd700; color: white; }
+        #meter-container { height: 10px; background: #eee; border-radius: 5px; margin-top: 10px; overflow: hidden; }
+        #meter-fill { height: 100%; background: #ff69b4; width: 50%; transition: width 0.5s; }
+    </style>
+</head>
+<body>
 
-class PollenGame:
-    def __init__(self):
-        self.player_name = ""
-        self.love_meter = 50
-        self.current_location = "教室"
-        self.game_running = True
+<div id="game-container">
+    <div id="status">場所: 教室 | 杉山くんの好感度</div>
+    <div id="meter-container"><div id="meter-fill"></div></div>
+    <div id="message"></div>
+    <div class="buttons" id="btn-group"></div>
+</div>
 
-    def set_typing(self, text, speed=0.05):
-        for char in text:
-            sys.stdout.write(char)
-            sys.stdout.flush()
-            time.sleep(speed)
-        print()
+<script>
+    let loveMeter = 50;
+    const messageEl = document.getElementById('message');
+    const btnGroup = document.getElementById('btn-group');
+    const meterFill = document.getElementById('meter-fill');
 
-    def show_status(self):
-        print(f"\n--- 【現在の状態】 場所: {self.current_location} | 杉山くんへの好感度: {self.love_meter} ---")
+    const scenes = {
+        start: {
+            text: "「……なんだよ。僕に近づくと、涙が止まらなくなるよ？」<br>目の前にはスギ花粉の擬人化、杉山くんが立っている。",
+            options: [
+                { text: "「それでも一緒にいたいの」", next: "talk_love" },
+                { text: "「点眼薬持ってるから大丈夫！」", next: "talk_reject" },
+                { text: "窓を全開にする", next: "action_window" },
+                { text: "辺りを調べる", next: "search" }
+            ]
+        },
+        talk_love: {
+            text: "杉山「……馬鹿だな、君は。……でも、悪くない気分だ」<br>彼は少し頬を染め、黄色い粉を少しだけ多めに舞わせた。",
+            change: 20,
+            options: [{ text: "次へ", next: "start" }]
+        },
+        talk_reject: {
+            text: "杉山「ふん、重装備だな。僕を拒絶するつもりか？ 興ざめだよ」<br>彼は冷たい目をして、風の吹く方へ視線を逸らした。",
+            change: -15,
+            options: [{ text: "次へ", next: "start" }]
+        },
+        search: {
+            text: "彼の周りには常に黄色い粒子がキラキラと舞っている。机の上には予備のティッシュが山積みだ。",
+            change: 5,
+            options: [{ text: "次へ", next: "start" }]
+        },
+        action_window: {
+            text: "窓を全開にした！ 春一番が吹き込み、杉山くんの輝きが増す。<br>杉山「最高の気分だ！ 街中を僕の色に染めてやるよ！」",
+            change: 25,
+            options: [{ text: "次へ", next: "start" }]
+        }
+    };
 
-    def start(self):
-        print("========================================")
-        print("   🌸 恋のムズムズ！〜君は僕の抗原〜   ")
-        print("========================================\n")
-        self.player_name = input("あなたの名前を入力してください: ")
-        self.set_typing(f"\n{self.player_name}は、窓から差し込む春の光の中で目を覚ました。")
-        self.set_typing("目の前には、どこか儚げで、でも少し攻撃的な雰囲気を持つ美少年が立っている。")
-        self.set_typing("彼はスギ花粉の擬人化、杉山（すぎやま）くんだ。")
-        
-        while self.game_running:
-            self.main_loop()
+    function updateDisplay(sceneKey) {
+        const scene = scenes[sceneKey];
+        if (scene.change) {
+            loveMeter = Math.max(0, Math.min(100, loveMeter + scene.change));
+            meterFill.style.width = loveMeter + "%";
+        }
 
-    def main_loop(self):
-        self.show_status()
-        print("\n何をしますか？")
-        print("1. 会話する")
-        print("2. 調べる")
-        print("3. 窓を開ける（行動）")
-        print("4. 立ち去る（ゲーム終了）")
+        messageEl.innerHTML = scene.text;
+        btnGroup.innerHTML = '';
 
-        choice = input("> ")
+        if (loveMeter >= 100) {
+            messageEl.innerHTML = "★★★ HAPPY END ★★★<br>杉山「もう離さない。君の粘膜すべてに、僕を刻み込んであげる……」";
+            return;
+        } else if (loveMeter <= 0) {
+            messageEl.innerHTML = "××× BAD END ×××<br>杉山「君からは拒絶の匂いがする。……来年までさよならだ」";
+            return;
+        }
 
-        if choice == "1":
-            self.talk()
-        elif choice == "2":
-            self.investigate()
-        elif choice == "3":
-            self.open_window()
-        elif choice == "4":
-            print("杉山「……ふん、逃げるのか。まあいい、来年また会おう」")
-            self.game_running = False
-        else:
-            print("無効な選択です。")
+        scene.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.innerText = opt.text;
+            btn.onclick = () => updateDisplay(opt.next);
+            btnGroup.appendChild(btn);
+        });
+    }
 
-    def talk(self):
-        print("\n杉山「……なんだよ。僕に近づくと、涙が止まらなくなるよ？」")
-        print("1. 「それでも一緒にいたいの」")
-        print("2. 「点眼薬持ってるから大丈夫！」")
-        print("3. 「ヘックシュ！」（くしゃみをする）")
-        
-        ans = input("選択 > ")
-        if ans == "1":
-            self.set_typing("杉山「……馬鹿だな、君は。……でも、悪くない気分だ」")
-            self.love_meter += 15
-        elif ans == "2":
-            self.set_typing("杉山「ふん、重装備だな。僕を拒絶するつもりか？」")
-            self.love_meter -= 10
-        elif ans == "3":
-            self.set_typing("杉山「あはは！いい反応だね。もっと僕を感じてよ」")
-            self.love_meter += 5
-        
-        self.check_ending()
-
-    def investigate(self):
-        self.set_typing("\nあたりを見渡すと、彼の周りだけ黄色い粒子がキラキラと舞っている。")
-        self.set_typing("机の上には、大量のティッシュが置かれている……。")
-        self.love_meter += 2
-
-    def open_window(self):
-        self.set_typing("\n窓を全開にした！ 春一番が吹き込み、杉山くんの輝きが増す。")
-        self.set_typing("杉山「最高の気分だ！ 街中を僕の色に染めてやるよ！」")
-        self.love_meter += 20
-        self.check_ending()
-
-    def check_ending(self):
-        if self.love_meter >= 100:
-            print("\n★★★ HAPPY END: 永久の結膜炎 ★★★")
-            self.set_typing(f"杉山「もう離さない。君の粘膜すべてに、僕を刻み込んであげる……」")
-            self.set_typing(f"{self.player_name}は、止まらない涙と鼻水の中で、幸せを噛み締めた。")
-            self.game_running = False
-        elif self.love_meter <= 0:
-            print("\n××× BAD END: 抗ヒスタミン薬の壁 ×××")
-            self.set_typing("杉山「君からは、拒絶の匂いがする。……さよならだ」")
-            self.set_typing("杉山くんは風に乗って消えてしまった。")
-            self.game_running = False
-
-if __name__ == "__main__":
-    game = PollenGame()
-    game.start()
+    // ゲーム開始
+    updateDisplay('start');
+</script>
+</body>
+</html>
