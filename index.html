@@ -1,212 +1,134 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>Horror Game</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: "Yu Gothic", sans-serif;
-      background: black;
-      color: #ddd;
-      overflow-x: hidden;
-    }
+<meta charset="UTF-8">
+<title>Horror Game</title>
+<style>
+body {
+  margin: 0;
+  background: black;
+  color: #ddd;
+  font-family: sans-serif;
+  overflow: hidden;
+}
 
-    body::before {
-      content: "";
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      background: url('https://www.transparenttextures.com/patterns/asfalt-dark.png');
-      opacity: 0.3;
-      z-index: -1;
-    }
+#game {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
 
-    header {
-      text-align: center;
-      padding: 60px 20px;
-      letter-spacing: 5px;
-      animation: flicker 2s infinite;
-    }
+#room {
+  width: 600px;
+  height: 350px;
+  background: #111;
+  border: 2px solid #333;
+  position: relative;
+}
 
-    @keyframes flicker {
-      0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; }
-      20%, 24%, 55% { opacity: 0.2; }
-    }
+.object {
+  position: absolute;
+  border: 1px solid #555;
+  padding: 5px;
+  cursor: pointer;
+}
 
-    h1 {
-      font-size: 2.5em;
-      color: #ff2e2e;
-    }
+#door { bottom: 10px; right: 10px; }
+#box { top: 20px; left: 20px; }
+#mirror { top: 20px; right: 20px; }
 
-    .tabs {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
+#textBox {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.8);
+  padding: 10px 20px;
+  border: 1px solid #444;
+}
 
-    .tab {
-      padding: 10px 20px;
-      border: 1px solid #444;
-      cursor: pointer;
-    }
-
-    .tab:hover {
-      background: #222;
-    }
-
-    .container {
-      max-width: 800px;
-      margin: auto;
-      padding: 20px;
-    }
-
-    .card {
-      background: rgba(20,20,20,0.9);
-      border: 1px solid #444;
-      padding: 20px;
-      margin: 20px 0;
-    }
-
-    button {
-      background: black;
-      color: red;
-      border: 1px solid red;
-      padding: 10px 20px;
-      cursor: pointer;
-      margin: 5px;
-    }
-
-    button:hover {
-      background: red;
-      color: black;
-    }
-
-    .hidden { display: none; }
-
-    footer {
-      text-align: center;
-      padding: 20px;
-      font-size: 0.8em;
-      opacity: 0.5;
-    }
-  </style>
+#moveHint {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 12px;
+  opacity: 0.5;
+}
+</style>
 </head>
 <body>
 
-<header>
-  <h1>DON'T LOOK BACK</h1>
-  <p>そのページ、本当に開いていいの？</p>
-</header>
+<div id="game">
+  <div id="room">
 
-<div class="tabs">
-  <div class="tab" onclick="showTab('story')">Story</div>
-  <div class="tab" onclick="showTab('game')">Play</div>
-</div>
+    <div id="moveHint">WASDキーで移動 / クリックで調べる</div>
 
-<div class="container">
+    <div id="player" style="width:15px;height:15px;background:red;position:absolute;left:300px;top:180px;"></div>
 
-  <div id="story" class="card">
-    <h2>Story</h2>
-    <p>
-      深夜、帰り道。足音がついてくる。
-      振り返るか、走るか。
-    </p>
+    <div id="door" class="object">ドア</div>
+    <div id="box" class="object">箱</div>
+    <div id="mirror" class="object">鏡</div>
+
   </div>
 
-  <div id="game" class="card hidden">
-    <h2>Game</h2>
-    <p id="text">あなたは夜道を歩いている…</p>
-    <div id="choices"></div>
-  </div>
-
+  <div id="textBox">暗い部屋にいる…</div>
 </div>
-
-<footer>© Horror Game</footer>
 
 <script>
 
-// タブ切り替え
-function showTab(tab) {
-  document.getElementById('story').classList.add('hidden');
-  document.getElementById('game').classList.add('hidden');
-  document.getElementById(tab).classList.remove('hidden');
+const player = document.getElementById('player');
+let x = 300;
+let y = 180;
+
+// 移動
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'w') y -= 10;
+  if (e.key === 's') y += 10;
+  if (e.key === 'a') x -= 10;
+  if (e.key === 'd') x += 10;
+
+  player.style.left = x + 'px';
+  player.style.top = y + 'px';
+});
+
+// テキスト表示
+function showText(msg) {
+  document.getElementById('textBox').innerText = msg;
 }
 
-// ストーリー分岐データ
-const scenes = {
-  start: {
-    text: "後ろから足音が聞こえる。どうする？",
-    choices: [
-      { text: "振り返る", next: "look" },
-      { text: "無視して歩く", next: "ignore" }
-    ]
-  },
-  look: {
-    text: "誰もいない。でもすぐ後ろに気配…",
-    choices: [
-      { text: "もう一度見る", next: "bad" },
-      { text: "走る", next: "run" }
-    ]
-  },
-  ignore: {
-    text: "足音は消えた。でもスマホに通知が来た。",
-    choices: [
-      { text: "確認する", next: "phone" },
-      { text: "無視する", next: "run" }
-    ]
-  },
-  phone: {
-    text: "『うしろ』ってメッセージが来てる…",
-    choices: [
-      { text: "振り返る", next: "bad" },
-      { text: "走る", next: "run" }
-    ]
-  },
-  run: {
-    text: "全力で走った。家に着いた…助かった？",
-    choices: [
-      { text: "ドアを開ける", next: "end" }
-    ]
-  },
-  bad: {
-    text: "目が合った。",
-    choices: []
-  },
-  end: {
-    text: "家の中に『それ』はいた。",
-    choices: []
+// オブジェクト調べる
+
+document.getElementById('box').onclick = () => {
+  showText('中は空っぽ…いや、何か動いた？');
+};
+
+let mirrorCount = 0;
+document.getElementById('mirror').onclick = () => {
+  mirrorCount++;
+  if (mirrorCount === 1) showText('自分の顔が映っている…');
+  else if (mirrorCount === 2) showText('一瞬、後ろに誰か…');
+  else showText('もう見たくない。');
+};
+
+
+document.getElementById('door').onclick = () => {
+  if (Math.random() < 0.5) {
+    showText('ドアは開かない…');
+  } else {
+    showText('ドアが開いた。外は暗い。');
   }
 };
 
-// 初期化
-let current = 'start';
-render();
-
-function render() {
-  const scene = scenes[current];
-  document.getElementById('text').innerText = scene.text;
-
-  const choicesDiv = document.getElementById('choices');
-  choicesDiv.innerHTML = '';
-
-  scene.choices.forEach(choice => {
-    const btn = document.createElement('button');
-    btn.innerText = choice.text;
-    btn.onclick = () => {
-      current = choice.next;
-      render();
-
-      // ランダム不安演出
-      if (Math.random() < 0.3) {
-        document.body.style.background = '#200';
-        setTimeout(() => document.body.style.background = 'black', 100);
-      }
-    };
-    choicesDiv.appendChild(btn);
-  });
-}
+// 不安演出
+setInterval(() => {
+  if (Math.random() < 0.1) {
+    document.body.style.background = '#200';
+    setTimeout(() => document.body.style.background = 'black', 100);
+  }
+}, 1000);
 
 </script>
 
