@@ -1,144 +1,99 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<title>謎解きホラー</title>
-<style>
-body { margin:0; overflow:hidden; background:black; }
-canvas { display:block; }
-#ui {
-  position:absolute;
-  bottom:20px;
-  left:50%;
-  transform:translateX(-50%);
-  color:white;
-  background:rgba(0,0,0,0.7);
-  padding:10px 20px;
-  font-size:14px;
-}
-</style>
-</head>
-<body>
-<div id="ui">数字を探して入力して</div>
+import sys
+import time
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.158/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.158/examples/js/controls/PointerLockControls.js"></script>
+class PollenGame:
+    def __init__(self):
+        self.player_name = ""
+        self.love_meter = 50
+        self.current_location = "教室"
+        self.game_running = True
 
-<script>
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000000);
+    def set_typing(self, text, speed=0.05):
+        for char in text:
+            sys.stdout.write(char)
+            sys.stdout.flush()
+            time.sleep(speed)
+        print()
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+    def show_status(self):
+        print(f"\n--- 【現在の状態】 場所: {self.current_location} | 杉山くんへの好感度: {self.love_meter} ---")
 
-const controls = new THREE.PointerLockControls(camera, document.body);
-document.body.addEventListener('click', () => controls.lock());
+    def start(self):
+        print("========================================")
+        print("   🌸 恋のムズムズ！〜君は僕の抗原〜   ")
+        print("========================================\n")
+        self.player_name = input("あなたの名前を入力してください: ")
+        self.set_typing(f"\n{self.player_name}は、窓から差し込む春の光の中で目を覚ました。")
+        self.set_typing("目の前には、どこか儚げで、でも少し攻撃的な雰囲気を持つ美少年が立っている。")
+        self.set_typing("彼はスギ花粉の擬人化、杉山（すぎやま）くんだ。")
+        
+        while self.game_running:
+            self.main_loop()
 
-const light = new THREE.PointLight(0xffffff,1,10);
-light.position.set(0,2,0);
-scene.add(light);
+    def main_loop(self):
+        self.show_status()
+        print("\n何をしますか？")
+        print("1. 会話する")
+        print("2. 調べる")
+        print("3. 窓を開ける（行動）")
+        print("4. 立ち去る（ゲーム終了）")
 
-// 床
-const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(20,20),
-  new THREE.MeshBasicMaterial({color:0x111111})
-);
-floor.rotation.x = -Math.PI/2;
-scene.add(floor);
+        choice = input("> ")
 
-// 壁
-function wall(x,z){
-  const w = new THREE.Mesh(
-    new THREE.BoxGeometry(1,2,1),
-    new THREE.MeshBasicMaterial({color:0x222222})
-  );
-  w.position.set(x,1,z);
-  scene.add(w);
-}
-for(let i=-10;i<10;i++){ wall(i,-10); wall(i,10); wall(-10,i); wall(10,i); }
+        if choice == "1":
+            self.talk()
+        elif choice == "2":
+            self.investigate()
+        elif choice == "3":
+            self.open_window()
+        elif choice == "4":
+            print("杉山「……ふん、逃げるのか。まあいい、来年また会おう」")
+            self.game_running = False
+        else:
+            print("無効な選択です。")
 
-// 謎の数字オブジェクト
-const clues = [];
-function createClue(x,z,number){
-  const c = new THREE.Mesh(
-    new THREE.BoxGeometry(0.5,0.5,0.5),
-    new THREE.MeshBasicMaterial({color:0x00ff00})
-  );
-  c.position.set(x,0.25,z);
-  c.userData.number = number;
-  scene.add(c);
-  clues.push(c);
-}
+    def talk(self):
+        print("\n杉山「……なんだよ。僕に近づくと、涙が止まらなくなるよ？」")
+        print("1. 「それでも一緒にいたいの」")
+        print("2. 「点眼薬持ってるから大丈夫！」")
+        print("3. 「ヘックシュ！」（くしゃみをする）")
+        
+        ans = input("選択 > ")
+        if ans == "1":
+            self.set_typing("杉山「……馬鹿だな、君は。……でも、悪くない気分だ」")
+            self.love_meter += 15
+        elif ans == "2":
+            self.set_typing("杉山「ふん、重装備だな。僕を拒絶するつもりか？」")
+            self.love_meter -= 10
+        elif ans == "3":
+            self.set_typing("杉山「あはは！いい反応だね。もっと僕を感じてよ」")
+            self.love_meter += 5
+        
+        self.check_ending()
 
-createClue(2,-2,3);
-createClue(-3,-1,7);
-createClue(1,3,1);
+    def investigate(self):
+        self.set_typing("\nあたりを見渡すと、彼の周りだけ黄色い粒子がキラキラと舞っている。")
+        self.set_typing("机の上には、大量のティッシュが置かれている……。")
+        self.love_meter += 2
 
-camera.position.set(0,1.6,5);
+    def open_window(self):
+        self.set_typing("\n窓を全開にした！ 春一番が吹き込み、杉山くんの輝きが増す。")
+        self.set_typing("杉山「最高の気分だ！ 街中を僕の色に染めてやるよ！」")
+        self.love_meter += 20
+        self.check_ending()
 
-const keys={};
-document.addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
-document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+    def check_ending(self):
+        if self.love_meter >= 100:
+            print("\n★★★ HAPPY END: 永久の結膜炎 ★★★")
+            self.set_typing(f"杉山「もう離さない。君の粘膜すべてに、僕を刻み込んであげる……」")
+            self.set_typing(f"{self.player_name}は、止まらない涙と鼻水の中で、幸せを噛み締めた。")
+            self.game_running = False
+        elif self.love_meter <= 0:
+            print("\n××× BAD END: 抗ヒスタミン薬の壁 ×××")
+            self.set_typing("杉山「君からは、拒絶の匂いがする。……さよならだ」")
+            self.set_typing("杉山くんは風に乗って消えてしまった。")
+            self.game_running = False
 
-let collected = "";
-let phase = 0;
-
-function move(){
-  const s=0.05;
-  if(keys['w']) controls.moveForward(s);
-  if(keys['s']) controls.moveForward(-s);
-  if(keys['a']) controls.moveRight(-s);
-  if(keys['d']) controls.moveRight(s);
-}
-
-function checkClues(){
-  clues.forEach(c=>{
-    const d = camera.position.distanceTo(c.position);
-    if(d<1){
-      if(!c.userData.taken){
-        c.userData.taken=true;
-        collected += c.userData.number;
-        document.getElementById('ui').innerText = "数字を見つけた: " + collected;
-      }
-    }
-  });
-
-  // 正解で異変
-  if(collected.length>=3 && phase===0){
-    if(collected==="371"){
-      phase=1;
-      document.getElementById('ui').innerText = "…何かがおかしい";
-
-      // 空間変化
-      scene.background = new THREE.Color(0x220000);
-
-      // 新しい物体（不気味）
-      const shadow = new THREE.Mesh(
-        new THREE.BoxGeometry(1,2,1),
-        new THREE.MeshBasicMaterial({color:0x000000})
-      );
-      shadow.position.set(0,1,-3);
-      scene.add(shadow);
-    }
-  }
-
-  // 第二段階
-  if(phase===1){
-    if(Math.random()<0.01){
-      document.getElementById('ui').innerText = "見られてる";
-    }
-  }
-}
-
-function animate(){
-  requestAnimationFrame(animate);
-  move();
-  checkClues();
-  renderer.render(scene,camera);
-}
-animate();
-</script>
-</body>
-</html>
+if __name__ == "__main__":
+    game = PollenGame()
+    game.start()
