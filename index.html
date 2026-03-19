@@ -196,3 +196,219 @@
       border: 1px solid #444;
       cursor: pointer;
     }
+
+
+    <!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Horror Game</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Yu Gothic", sans-serif;
+      background: black;
+      color: #ddd;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      background: url('https://www.transparenttextures.com/patterns/asfalt-dark.png');
+      opacity: 0.3;
+      z-index: -1;
+    }
+
+    header {
+      text-align: center;
+      padding: 60px 20px;
+      letter-spacing: 5px;
+      animation: flicker 2s infinite;
+    }
+
+    @keyframes flicker {
+      0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; }
+      20%, 24%, 55% { opacity: 0.2; }
+    }
+
+    h1 {
+      font-size: 2.5em;
+      color: #ff2e2e;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      border: 1px solid #444;
+      cursor: pointer;
+    }
+
+    .tab:hover {
+      background: #222;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: rgba(20,20,20,0.9);
+      border: 1px solid #444;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    button {
+      background: black;
+      color: red;
+      border: 1px solid red;
+      padding: 10px 20px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    button:hover {
+      background: red;
+      color: black;
+    }
+
+    .hidden { display: none; }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 0.8em;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>DON'T LOOK BACK</h1>
+  <p>そのページ、本当に開いていいの？</p>
+</header>
+
+<div class="tabs">
+  <div class="tab" onclick="showTab('story')">Story</div>
+  <div class="tab" onclick="showTab('game')">Play</div>
+</div>
+
+<div class="container">
+
+  <div id="story" class="card">
+    <h2>Story</h2>
+    <p>
+      深夜、帰り道。足音がついてくる。
+      振り返るか、走るか。
+    </p>
+  </div>
+
+  <div id="game" class="card hidden">
+    <h2>Game</h2>
+    <p id="text">あなたは夜道を歩いている…</p>
+    <div id="choices"></div>
+  </div>
+
+</div>
+
+<footer>© Horror Game</footer>
+
+<script>
+
+// タブ切り替え
+function showTab(tab) {
+  document.getElementById('story').classList.add('hidden');
+  document.getElementById('game').classList.add('hidden');
+  document.getElementById(tab).classList.remove('hidden');
+}
+
+// ストーリー分岐データ
+const scenes = {
+  start: {
+    text: "後ろから足音が聞こえる。どうする？",
+    choices: [
+      { text: "振り返る", next: "look" },
+      { text: "無視して歩く", next: "ignore" }
+    ]
+  },
+  look: {
+    text: "誰もいない。でもすぐ後ろに気配…",
+    choices: [
+      { text: "もう一度見る", next: "bad" },
+      { text: "走る", next: "run" }
+    ]
+  },
+  ignore: {
+    text: "足音は消えた。でもスマホに通知が来た。",
+    choices: [
+      { text: "確認する", next: "phone" },
+      { text: "無視する", next: "run" }
+    ]
+  },
+  phone: {
+    text: "『うしろ』ってメッセージが来てる…",
+    choices: [
+      { text: "振り返る", next: "bad" },
+      { text: "走る", next: "run" }
+    ]
+  },
+  run: {
+    text: "全力で走った。家に着いた…助かった？",
+    choices: [
+      { text: "ドアを開ける", next: "end" }
+    ]
+  },
+  bad: {
+    text: "目が合った。",
+    choices: []
+  },
+  end: {
+    text: "家の中に『それ』はいた。",
+    choices: []
+  }
+};
+
+// 初期化
+let current = 'start';
+render();
+
+function render() {
+  const scene = scenes[current];
+  document.getElementById('text').innerText = scene.text;
+
+  const choicesDiv = document.getElementById('choices');
+  choicesDiv.innerHTML = '';
+
+  scene.choices.forEach(choice => {
+    const btn = document.createElement('button');
+    btn.innerText = choice.text;
+    btn.onclick = () => {
+      current = choice.next;
+      render();
+
+      // ランダム不安演出
+      if (Math.random() < 0.3) {
+        document.body.style.background = '#200';
+        setTimeout(() => document.body.style.background = 'black', 100);
+      }
+    };
+    choicesDiv.appendChild(btn);
+  });
+}
+
+</script>
+
+</body>
+</html>
