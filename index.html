@@ -2,124 +2,143 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>3D風ホラー</title>
+<title>謎解きホラー</title>
 <style>
-body {
-  margin: 0;
-  overflow: hidden;
-  background: black;
-}
-canvas { display: block; }
-#text {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: white;
-  background: rgba(0,0,0,0.7);
-  padding: 10px;
-  font-size: 14px;
+body { margin:0; overflow:hidden; background:black; }
+canvas { display:block; }
+#ui {
+  position:absolute;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  color:white;
+  background:rgba(0,0,0,0.7);
+  padding:10px 20px;
+  font-size:14px;
 }
 </style>
 </head>
 <body>
-<div id="text">WASDで移動 / マウスで視点</div>
+<div id="ui">数字を探して入力して</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.158/examples/js/controls/PointerLockControls.js"></script>
 
 <script>
-// シーン
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
 
-// カメラ
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-
-// レンダラー
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// コントロール（FPS視点）
 const controls = new THREE.PointerLockControls(camera, document.body);
 document.body.addEventListener('click', () => controls.lock());
 
-// ライト
-const light = new THREE.PointLight(0xffffff, 1, 10);
+const light = new THREE.PointLight(0xffffff,1,10);
 light.position.set(0,2,0);
 scene.add(light);
 
 // 床
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(20,20),
-  new THREE.MeshBasicMaterial({color: 0x111111})
+  new THREE.MeshBasicMaterial({color:0x111111})
 );
 floor.rotation.x = -Math.PI/2;
 scene.add(floor);
 
 // 壁
-function createWall(x,z) {
-  const wall = new THREE.Mesh(
+function wall(x,z){
+  const w = new THREE.Mesh(
     new THREE.BoxGeometry(1,2,1),
-    new THREE.MeshBasicMaterial({color: 0x222222})
+    new THREE.MeshBasicMaterial({color:0x222222})
   );
-  wall.position.set(x,1,z);
-  scene.add(wall);
+  w.position.set(x,1,z);
+  scene.add(w);
+}
+for(let i=-10;i<10;i++){ wall(i,-10); wall(i,10); wall(-10,i); wall(10,i); }
+
+// 謎の数字オブジェクト
+const clues = [];
+function createClue(x,z,number){
+  const c = new THREE.Mesh(
+    new THREE.BoxGeometry(0.5,0.5,0.5),
+    new THREE.MeshBasicMaterial({color:0x00ff00})
+  );
+  c.position.set(x,0.25,z);
+  c.userData.number = number;
+  scene.add(c);
+  clues.push(c);
 }
 
-for(let i=-10;i<10;i++){
-  createWall(i,-10);
-  createWall(i,10);
-  createWall(-10,i);
-  createWall(10,i);
-}
+createClue(2,-2,3);
+createClue(-3,-1,7);
+createClue(1,3,1);
 
-// オブジェクト（怖いポイント）
-const box = new THREE.Mesh(
-  new THREE.BoxGeometry(1,1,1),
-  new THREE.MeshBasicMaterial({color: 0x550000})
-);
-box.position.set(2,0.5,-3);
-scene.add(box);
-
-// カメラ初期位置
 camera.position.set(0,1.6,5);
 
-// 移動
-const keys = {};
-document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+const keys={};
+document.addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
+document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+
+let collected = "";
+let phase = 0;
 
 function move(){
-  const speed = 0.05;
-  if(keys['w']) controls.moveForward(speed);
-  if(keys['s']) controls.moveForward(-speed);
-  if(keys['a']) controls.moveRight(-speed);
-  if(keys['d']) controls.moveRight(speed);
+  const s=0.05;
+  if(keys['w']) controls.moveForward(s);
+  if(keys['s']) controls.moveForward(-s);
+  if(keys['a']) controls.moveRight(-s);
+  if(keys['d']) controls.moveRight(s);
 }
 
-// 距離でイベント
-function checkEvents(){
-  const dist = camera.position.distanceTo(box.position);
-  if(dist < 2){
-    document.getElementById('text').innerText = '箱がある…開ける？（自動）';
+function checkClues(){
+  clues.forEach(c=>{
+    const d = camera.position.distanceTo(c.position);
+    if(d<1){
+      if(!c.userData.taken){
+        c.userData.taken=true;
+        collected += c.userData.number;
+        document.getElementById('ui').innerText = "数字を見つけた: " + collected;
+      }
+    }
+  });
+
+  // 正解で異変
+  if(collected.length>=3 && phase===0){
+    if(collected==="371"){
+      phase=1;
+      document.getElementById('ui').innerText = "…何かがおかしい";
+
+      // 空間変化
+      scene.background = new THREE.Color(0x220000);
+
+      // 新しい物体（不気味）
+      const shadow = new THREE.Mesh(
+        new THREE.BoxGeometry(1,2,1),
+        new THREE.MeshBasicMaterial({color:0x000000})
+      );
+      shadow.position.set(0,1,-3);
+      scene.add(shadow);
+    }
+  }
+
+  // 第二段階
+  if(phase===1){
     if(Math.random()<0.01){
-      document.body.style.background = '#200';
-      setTimeout(()=>document.body.style.background='black',100);
+      document.getElementById('ui').innerText = "見られてる";
     }
   }
 }
 
-// ループ
 function animate(){
   requestAnimationFrame(animate);
   move();
-  checkEvents();
+  checkClues();
   renderer.render(scene,camera);
 }
 animate();
-
 </script>
 </body>
 </html>
