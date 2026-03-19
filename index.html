@@ -4,92 +4,166 @@
     <meta charset="UTF-8">
     <title>恋のムズムズ！〜君は僕の抗原〜</title>
     <style>
-        body { background-color: #fdf5e6; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        #game-container { background: white; width: 600px; padding: 20px; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.1); border: 3px solid #ffd700; }
-        #status { font-size: 0.9em; color: #666; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        #message { height: 120px; font-size: 1.1em; line-height: 1.6; margin-bottom: 20px; }
-        .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button { padding: 10px; cursor: pointer; border: 1px solid #ffd700; background: #fffdf0; border-radius: 5px; transition: 0.2s; }
-        button:hover { background: #ffd700; color: white; }
-        #meter-container { height: 10px; background: #eee; border-radius: 5px; margin-top: 10px; overflow: hidden; }
-        #meter-fill { height: 100%; background: #ff69b4; width: 50%; transition: width 0.5s; }
+        body { background-color: #fdf5e6; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; transition: background-color 0.5s; }
+        #game-container { background: white; width: 600px; min-height: 400px; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border: 4px solid #ffd700; position: relative; text-align: center; }
+        
+        /* タイトル画面用 */
+        h1 { color: #d2691e; font-size: 2.5em; margin-bottom: 50px; text-shadow: 2px 2px 0px #fff; }
+        .start-btn { padding: 15px 40px; font-size: 1.5em; cursor: pointer; background: #ff69b4; color: white; border: none; border-radius: 50px; transition: 0.3s; box-shadow: 0 5px 0 #c71585; }
+        .start-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 0 #c71585; }
+
+        /* ゲーム画面用 */
+        #status-bar { display: none; justify-content: space-between; margin-bottom: 20px; font-weight: bold; color: #555; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        #message { height: 150px; font-size: 1.1em; line-height: 1.8; text-align: left; margin-bottom: 20px; color: #333; }
+        .buttons { display: none; grid-template-columns: 1fr 1fr; gap: 15px; }
+        button.choice { padding: 12px; cursor: pointer; border: 2px solid #ffd700; background: white; border-radius: 10px; font-size: 1em; transition: 0.2s; }
+        button.choice:hover { background: #fff9e6; border-color: #ffa500; }
+        
+        #love-meter-box { width: 100%; height: 12px; background: #eee; border-radius: 6px; margin-top: 5px; overflow: hidden; }
+        #love-meter-fill { height: 100%; background: #ff69b4; width: 50%; transition: width 0.5s; }
+        
+        .char-tag { display: inline-block; padding: 2px 10px; border-radius: 5px; color: white; font-size: 0.8em; margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="status">場所: 教室 | 杉山くんの好感度</div>
-    <div id="meter-container"><div id="meter-fill"></div></div>
-    <div id="message"></div>
-    <div class="buttons" id="btn-group"></div>
+    <div id="start-screen">
+        <p style="font-size: 1.2em; color: #ffa500;">🌸 春の訪れ、アレルギーの予感 🌸</p>
+        <h1>恋のムズムズ！<br><span style="font-size: 0.6em;">〜君は僕の抗原〜</span></h1>
+        <button class="start-btn" onclick="goToSelect()">運命の相手を選ぶ</button>
+    </div>
+
+    <div id="game-screen" style="display: none;">
+        <div id="status-bar">
+            <div>対象: <span id="target-name">???</span></div>
+            <div style="width: 150px;">好感度: <div id="love-meter-box"><div id="love-meter-fill"></div></div></div>
+        </div>
+        <div id="message"></div>
+        <div class="buttons" id="btn-group"></div>
+    </div>
 </div>
 
 <script>
-    let loveMeter = 50;
-    const messageEl = document.getElementById('message');
-    const btnGroup = document.getElementById('btn-group');
-    const meterFill = document.getElementById('meter-fill');
+    let currentLove = 50;
+    let currentTarget = null;
 
-    const scenes = {
-        start: {
-            text: "「……なんだよ。僕に近づくと、涙が止まらなくなるよ？」<br>目の前にはスギ花粉の擬人化、杉山くんが立っている。",
-            options: [
-                { text: "「それでも一緒にいたいの」", next: "talk_love" },
-                { text: "「点眼薬持ってるから大丈夫！」", next: "talk_reject" },
-                { text: "窓を全開にする", next: "action_window" },
-                { text: "辺りを調べる", next: "search" }
-            ]
+    const characters = {
+        sugiyama: {
+            name: "杉山（スギ花粉）",
+            color: "#ffd700",
+            tag: "俺様系・飛散量最大",
+            intro: "「ふん、僕に近づくなんていい度胸だ。涙で前が見えなくなっても知らないよ？」"
         },
-        talk_love: {
-            text: "杉山「……馬鹿だな、君は。……でも、悪くない気分だ」<br>彼は少し頬を染め、黄色い粉を少しだけ多めに舞わせた。",
-            change: 20,
-            options: [{ text: "次へ", next: "start" }]
-        },
-        talk_reject: {
-            text: "杉山「ふん、重装備だな。僕を拒絶するつもりか？ 興ざめだよ」<br>彼は冷たい目をして、風の吹く方へ視線を逸らした。",
-            change: -15,
-            options: [{ text: "次へ", next: "start" }]
-        },
-        search: {
-            text: "彼の周りには常に黄色い粒子がキラキラと舞っている。机の上には予備のティッシュが山積みだ。",
-            change: 5,
-            options: [{ text: "次へ", next: "start" }]
-        },
-        action_window: {
-            text: "窓を全開にした！ 春一番が吹き込み、杉山くんの輝きが増す。<br>杉山「最高の気分だ！ 街中を僕の色に染めてやるよ！」",
-            change: 25,
-            options: [{ text: "次へ", next: "start" }]
+        higaki: {
+            name: "桧垣（ヒノキ花粉）",
+            color: "#228b22",
+            tag: "クール系・時間差の刺客",
+            intro: "「杉山が去ったからって安心した？……僕のターンはこれからだよ。」"
         }
     };
 
-    function updateDisplay(sceneKey) {
-        const scene = scenes[sceneKey];
-        if (scene.change) {
-            loveMeter = Math.max(0, Math.min(100, loveMeter + scene.change));
-            meterFill.style.width = loveMeter + "%";
+    const script = {
+        sugiyama: {
+            start: {
+                text: "放課後の教室。窓際で杉山くんが黄色いオーラを放っている。",
+                options: [
+                    { text: "「杉山くん、今日も飛んでるね」", next: "sugi_1", change: 10 },
+                    { text: "（空気清浄機を強にする）", next: "sugi_2", change: -20 },
+                    { text: "「一生くしゃみが止まらなくてもいい！」", next: "sugi_3", change: 25 }
+                ]
+            },
+            sugi_1: { text: "杉山「当たり前だろ。僕を誰だと思ってるんだ？……もっと浴びせてやろうか。」", options: [{ text: "戻る", next: "start" }] },
+            sugi_2: { text: "杉山「チッ、冷たい奴だな。そんなに僕を排除したいのかよ……。」", options: [{ text: "戻る", next: "start" }] },
+            sugi_3: { text: "杉山「……変な奴。でも、そこまで言われると……もっとムズムズさせたくなっちゃうな。」", options: [{ text: "戻る", next: "start" }] }
+        },
+        higaki: {
+            start: {
+                text: "4月の公園。桧垣くんが木陰でひっそりと佇んでいる。",
+                options: [
+                    { text: "「杉山くんより、あなたの方が辛い」", next: "higa_1", change: 20 },
+                    { text: "「ヒノキの香り、好きだよ」", next: "higa_2", change: 10 },
+                    { text: "マスクを二重にする", next: "higa_3", change: -15 }
+                ]
+            },
+            higa_1: { text: "桧垣「……通だね。僕の怖さを知ってるなんて。君、気に入ったよ。」", options: [{ text: "戻る", next: "start" }] },
+            higa_2: { text: "桧垣「香りと花粉は別物だよ？……でも、褒められたのは、悪くない。」", options: [{ text: "戻る", next: "start" }] },
+            higa_3: { text: "桧垣「……徹底ガードだね。僕の粒子、一つも通さないつもりなんだ。」", options: [{ text: "戻る", next: "start" }] }
         }
+    };
 
-        messageEl.innerHTML = scene.text;
+    function goToSelect() {
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
+        document.getElementById('btn-group').style.display = 'grid';
+        
+        const msg = document.getElementById('message');
+        msg.innerHTML = "どの花粉にアプローチしますか？";
+        
+        const btnGroup = document.getElementById('btn-group');
+        btnGroup.innerHTML = '';
+        
+        for (let id in characters) {
+            const btn = document.createElement('button');
+            btn.className = 'choice';
+            btn.innerHTML = `<span class="char-tag" style="background:${characters[id].color}">${characters[id].tag}</span><br><b>${characters[id].name}</b>`;
+            btn.onclick = () => startRoutine(id);
+            btnGroup.appendChild(btn);
+        }
+    }
+
+    function startRoutine(charId) {
+        currentTarget = charId;
+        currentLove = 50;
+        document.getElementById('status-bar').style.display = 'flex';
+        document.getElementById('target-name').innerText = characters[charId].name;
+        updateMeter();
+        playScene('start');
+    }
+
+    function playScene(sceneKey) {
+        const scene = script[currentTarget][sceneKey];
+        const msg = document.getElementById('message');
+        const btnGroup = document.getElementById('btn-group');
+        
+        msg.innerHTML = scene.text;
         btnGroup.innerHTML = '';
 
-        if (loveMeter >= 100) {
-            messageEl.innerHTML = "★★★ HAPPY END ★★★<br>杉山「もう離さない。君の粘膜すべてに、僕を刻み込んであげる……」";
+        if (currentLove >= 100) {
+            msg.innerHTML = `🎉 【HAPPY END】<br>${characters[currentTarget].name}「もう逃がさない。君の免疫系、僕がジャックしてあげる……。」`;
+            btnGroup.innerHTML = '<button class="choice" onclick="location.reload()">タイトルへ戻る</button>';
             return;
-        } else if (loveMeter <= 0) {
-            messageEl.innerHTML = "××× BAD END ×××<br>杉山「君からは拒絶の匂いがする。……来年までさよならだ」";
+        } else if (currentLove <= 0) {
+            msg.innerHTML = `🚫 【BAD END】<br>${characters[currentTarget].name}「君とは相性が悪すぎる。病院へ行って薬をもらってきなよ。」`;
+            btnGroup.innerHTML = '<button class="choice" onclick="location.reload()">タイトルへ戻る</button>';
             return;
         }
 
         scene.options.forEach(opt => {
             const btn = document.createElement('button');
+            btn.className = 'choice';
             btn.innerText = opt.text;
-            btn.onclick = () => updateDisplay(opt.next);
+            btn.onclick = () => {
+                if(opt.change) currentLove += opt.change;
+                updateMeter();
+                playScene(opt.next);
+            };
             btnGroup.appendChild(btn);
         });
+        
+        // キャラ選択に戻るボタンを常設
+        const backBtn = document.createElement('button');
+        backBtn.className = 'choice';
+        backBtn.innerText = "他のキャラに会いに行く";
+        backBtn.style.gridColumn = "span 2";
+        backBtn.onclick = goToSelect;
+        btnGroup.appendChild(backBtn);
     }
 
-    // ゲーム開始
-    updateDisplay('start');
+    function updateMeter() {
+        currentLove = Math.max(0, Math.min(100, currentLove));
+        document.getElementById('love-meter-fill').style.width = currentLove + "%";
+    }
 </script>
 </body>
 </html>
