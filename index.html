@@ -2,44 +2,40 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>恋のムズムズ！〜君は僕の抗原〜 Full Version</title>
+    <title>恋のムズムズ！〜君は僕の抗原〜 Perfect Edition</title>
     <style>
-        body { background-color: #fdf5e6; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; transition: background-color 0.5s; }
-        #game-container { background: white; width: 700px; min-height: 500px; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border: 4px solid #ffd700; position: relative; text-align: center; margin: 20px; }
+        body { background-color: #fdf5e6; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        #game-container { background: white; width: 650px; min-height: 450px; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border: 4px solid #ffd700; position: relative; text-align: center; }
         
-        h1 { color: #d2691e; font-size: 2.2em; margin-bottom: 30px; text-shadow: 2px 2px 0px #fff; }
-        .start-btn { padding: 15px 40px; font-size: 1.5em; cursor: pointer; background: #ff69b4; color: white; border: none; border-radius: 50px; transition: 0.3s; box-shadow: 0 5px 0 #c71585; }
-        .start-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 0 #c71585; }
+        h1 { color: #d2691e; font-size: 2.2em; margin-bottom: 30px; }
+        .start-btn { padding: 15px 40px; font-size: 1.5em; cursor: pointer; background: #ff69b4; color: white; border: none; border-radius: 50px; box-shadow: 0 5px 0 #c71585; transition: 0.2s; }
+        .start-btn:hover { transform: translateY(-3px); }
 
         #status-bar { display: none; justify-content: space-between; margin-bottom: 20px; font-weight: bold; color: #555; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        #message { height: 120px; font-size: 1.1em; line-height: 1.6; text-align: left; margin-bottom: 20px; color: #333; overflow-y: auto; }
+        #message { height: 140px; font-size: 1.05em; line-height: 1.7; text-align: left; margin-bottom: 20px; color: #333; padding: 10px; background: #fffaf0; border-radius: 10px; }
         
-        /* 選択肢ボタンのレイアウト */
-        .buttons { display: none; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button.choice { padding: 10px; cursor: pointer; border: 2px solid #ffd700; background: white; border-radius: 10px; font-size: 0.9em; transition: 0.2s; }
-        button.choice:hover { background: #fff9e6; border-color: #ffa500; }
+        .buttons { display: none; grid-template-columns: 1fr 1fr; gap: 12px; }
+        button.choice { padding: 12px; cursor: pointer; border: 2px solid #ffd700; background: white; border-radius: 10px; font-size: 0.95em; transition: 0.2s; }
+        button.choice:hover { background: #fff9e6; transform: scale(1.02); }
         
-        #love-meter-box { width: 150px; height: 12px; background: #eee; border-radius: 6px; margin-top: 5px; overflow: hidden; }
+        #love-meter-box { width: 120px; height: 12px; background: #eee; border-radius: 6px; overflow: hidden; display: inline-block; vertical-align: middle; }
         #love-meter-fill { height: 100%; background: #ff69b4; width: 50%; transition: width 0.5s; }
-        
-        .char-tag { display: inline-block; padding: 2px 8px; border-radius: 5px; color: white; font-size: 0.7em; margin-bottom: 5px; }
+        .char-tag { display: inline-block; padding: 2px 8px; border-radius: 5px; color: white; font-size: 0.75em; margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
     <div id="start-screen">
-        <p style="font-size: 1.2em; color: #ffa500;">🌸 四季折々の、アレルギーの予感 🌸</p>
+        <p style="color: #ffa500;">🌸 逃げられない、このムズムズ 🌸</p>
         <h1>恋のムズムズ！<br><span style="font-size: 0.6em;">〜君は僕の抗原〜</span></h1>
-        <button class="start-btn" onclick="goToSelect()">運命の抗原を選ぶ</button>
+        <button class="start-btn" onclick="goToSelect()">運命の相手を選ぶ</button>
     </div>
 
     <div id="game-screen" style="display: none;">
         <div id="status-bar">
-            <div>対象: <span id="target-name">???</span></div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                好感度: <div id="love-meter-box"><div id="love-meter-fill"></div></div>
-            </div>
+            <div>対象: <span id="target-name"></span></div>
+            <div>好感度: <div id="love-meter-box"><div id="love-meter-fill"></div></div></div>
         </div>
         <div id="message"></div>
         <div class="buttons" id="btn-group"></div>
@@ -50,62 +46,101 @@
     let currentLove = 50;
     let currentTarget = null;
 
-    const characters = {
+    const charData = {
         sugiyama: {
             name: "杉山（スギ）", color: "#ffd700", tag: "俺様・王道",
-            happyEnd: "「もう逃がさない。君の免疫系、一生僕がジャックしてあげるから覚悟しろよ……。」"
+            scenes: {
+                start: {
+                    text: "春の陽気の中、杉山が黄色い粉をまき散らしながら歩いてくる。「おい、僕の飛散を全身で受け止めろよ。」",
+                    options: [
+                        { text: "「もっと…もっと浴びせて！」", next: "step2_up", change: 20, res: "「はっ、いい度胸だ。涙で前が見えなくなるまで可愛がってやるよ。」" },
+                        { text: "「空気清浄機、最強にするね」", next: "step2_down", change: -25, res: "「あ？そんな機械で僕を拒絶するのか？……冷てぇ奴。」" }
+                    ]
+                },
+                happy: "「もう逃がさない。君の免疫系、一生僕がジャックしてあげるから覚悟しろよ……。」"
+            }
         },
         higaki: {
-            name: "桧垣（ヒノキ）", color: "#228b22", tag: "クール・遅れてくる愛",
-            happyEnd: "「杉山が終わっても、僕はずっと君のそばにいる。ほら、涙を拭いて……またすぐ溢れるから。」"
+            name: "桧垣（ヒノキ）", color: "#228b22", tag: "クール系",
+            scenes: {
+                start: {
+                    text: "杉山の影に隠れて、桧垣が静かに微笑む。「杉山がいなくなって安心した？……残念、僕のターンだよ。」",
+                    options: [
+                        { text: "「あなたの時間差攻撃、嫌いじゃない」", next: "step2_up", change: 20, res: "「ふふ……僕の粘着質さに気づくなんて、君も相当だね。」" },
+                        { text: "「杉山くんの方がマシだった」", next: "step2_down", change: -25, res: "「……比較されるのは不愉快だ。君の粘膜を徹底的に荒らしてあげようか。」" }
+                    ]
+                },
+                happy: "「杉山が終わっても、僕はずっと君のそばにいる。ほら、涙を拭いて……またすぐ溢れるから。」"
+            }
         },
         ineyama: {
-            name: "稲山（イネ）", color: "#f0e68c", tag: "爽やか・初夏の誘惑",
-            happyEnd: "「田んぼの風に乗って、君の粘膜まで飛んでいくよ。僕たちの季節は、まだ始まったばかりだ。」"
+            name: "稲山（イネ）", color: "#f0e68c", tag: "爽やか・夏",
+            scenes: {
+                start: {
+                    text: "初夏の河川敷。爽やかな風と共に稲山が近づく。「初夏だからって油断してない？僕のこと、見てよ。」",
+                    options: [
+                        { text: "「カモガヤの香り、素敵…」", next: "step2_up", change: 20, res: "「そう。僕の粒子の細かさ、存分に味わってほしいな。」" },
+                        { text: "「草刈り機持ってきたよ」", next: "step2_down", change: -30, res: "「物騒なもの持たないでよ！……君には少し激しすぎる刺激が必要みたいだね。」" }
+                    ]
+                },
+                happy: "「田んぼの風に乗って、君の粘膜まで飛んでいくよ。僕たちの季節は、まだ始まったばかりだ。」"
+            }
         },
         butajima: {
-            name: "豚島（ブタクサ）", color: "#8b4513", tag: "秋の刺客・道端の恋",
-            happyEnd: "「秋風が吹くたび、僕を思い出して。君の鼻水が止まらないのは、僕への愛の証だろ？」"
+            name: "豚島（ブタクサ）", color: "#8b4513", tag: "秋の刺客",
+            scenes: {
+                start: {
+                    text: "秋の空き地。豚島が道端でトゲトゲしく立っている。「秋に油断してる奴らをムズムズさせるのが、僕の快感なんだ。」",
+                    options: [
+                        { text: "「秋の鼻水、あなたのせいね…❤️」", next: "step2_up", change: 20, res: "「気づくのが遅いよ。もう君の鼻腔は僕でいっぱいだ。」" },
+                        { text: "「ただの雑草でしょ？」", next: "step2_down", change: -30, res: "「……雑草だと？その言葉、後悔させてやる。明日からティッシュが手放せなくなるぞ。」" }
+                    ]
+                },
+                happy: "「秋風が吹くたび、僕を思い出して。君の鼻水が止まらないのは、僕への愛の証だろ？」"
+            }
         },
         shirakawa: {
-            name: "白河（シラカバ）", color: "#f5f5f5", tag: "北国の貴公子",
-            happyEnd: "「北の大地から君を想っているよ。リンゴを食べるたびに、僕との熱い反応（口腔アレルギー）を感じてね。」"
+            name: "白河（シラカバ）", color: "#dcdcdc", tag: "北国の貴公子",
+            scenes: {
+                start: {
+                    text: "北国の公園。白河が凛とした佇まいでこちらを見ている。「僕の粒子は少し特別だよ。果物と一緒に味わってみる？」",
+                    options: [
+                        { text: "「リンゴと一緒に…受け止めるわ」", next: "step2_up", change: 20, res: "「口腔アレルギー反応……喉のイガイガまで愛してくれるんだね。」" },
+                        { text: "「北海道から出ないで」", next: "step2_down", change: -25, res: "「ひどい言い草だ。僕の愛は、風に乗ってどこまでも追いかけるのに。」" }
+                    ]
+                },
+                happy: "「北の大地から君を想っているよ。体中の粘膜で、僕との熱い交わりを感じ続けてね。」"
+            }
         },
         yomogida: {
-            name: "蓬田（ヨモギ）", color: "#556b2f", tag: "地味系・粘着質な愛",
-            happyEnd: "「道端に咲く僕に気づいてくれた。君の鼻の奥深く、僕の粒子でいっぱいに満たしてあげる……。」"
+            name: "蓬田（ヨモギ）", color: "#556b2f", tag: "地味系・執着",
+            scenes: {
+                start: {
+                    text: "10月の夕暮れ。蓬田がじっとりとした視線を送る。「誰も見ていない道端で、君にだけ僕の毒（抗原）を教えたいな。」",
+                    options: [
+                        { text: "「ずっとムズムズしてたの…」", next: "step2_up", change: 20, res: "「そう……その充血した目。僕だけを見てくれている証拠だね。」" },
+                        { text: "「（除草剤をまく準備をする）」", next: "step2_down", change: -40, res: "「……残酷な人だ。でも、嫌いじゃない。君の肺の奥まで入り込んでやる……。」" }
+                    ]
+                },
+                happy: "「道端に咲く僕に気づいてくれた。君の鼻の奥深く、僕の粒子で永久に満たしてあげる……。」"
+            }
         }
-    };
-
-    // シナリオデータの簡略化（各キャラ共通構造）
-    const getScript = (id) => {
-        const scripts = {
-            sugiyama: { start: { text: "2月。教室の窓際、黄色い粉塵を纏った杉山が不敵に笑う。", options: [{text:"「今日もすごい飛散量だね」", next:"next", change:20}, {text:"「空気清浄機ポチー」", next:"bad", change:-30}] } },
-            higaki: { start: { text: "4月。ヒノキの香りが漂う。桧垣が静かに手ぐすねを引いている。", options: [{text:"「杉山くんより、あなたが好き」", next:"next", change:20}, {text:"「マスク二重にするね」", next:"bad", change:-30}] } },
-            ineyama: { start: { text: "6月。河川敷。稲山が風に吹かれてキラキラと輝いている。", options: [{text:"「爽やかなのにムズムズする…！」", next:"next", change:20}, {text:"「草刈り機持ってきたよ」", next:"bad", change:-30}] } },
-            butajima: { start: { text: "9月。空き地。豚島が猛烈な勢いで何かを飛ばしている。", options: [{text:"「秋の花粉も悪くないね」", next:"next", change:20}, {text:"「ただの雑草でしょ？」", next:"bad", change:-30}] } },
-            shirakawa: { start: { text: "5月。北海道。白河が白い肌を輝かせ立っている。", options: [{text:"「高貴なアレルギー反応…！」", next:"next", change:20}, {text:"「果物アレルギーきつい」", next:"bad", change:-30}] } },
-            yomogida: { start: { text: "10月。道端。蓬田がじっとこちらを見つめている。", options: [{text:"「どこにいても君を感じるよ」", next:"next", change:20}, {text:"「目薬さしていい？」", next:"bad", change:-30}] } }
-        };
-        return scripts[id];
     };
 
     function goToSelect() {
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'block';
-        document.getElementById('btn-group').style.display = 'grid';
         document.getElementById('status-bar').style.display = 'none';
-        
         const msg = document.getElementById('message');
-        msg.innerHTML = "どの抗原（ターゲット）にアプローチしますか？";
-        
         const btnGroup = document.getElementById('btn-group');
+        msg.innerHTML = "どのアレルギー（運命）を受け入れますか？";
+        btnGroup.style.display = 'grid';
         btnGroup.innerHTML = '';
         
-        for (let id in characters) {
+        for (let id in charData) {
             const btn = document.createElement('button');
             btn.className = 'choice';
-            const char = characters[id];
+            const char = charData[id];
             btn.innerHTML = `<span class="char-tag" style="background:${char.color}; color:${id==='shirakawa'?'#333':'white'}">${char.tag}</span><br><b>${char.name}</b>`;
             btn.onclick = () => startRoutine(id);
             btnGroup.appendChild(btn);
@@ -116,32 +151,36 @@
         currentTarget = charId;
         currentLove = 50;
         document.getElementById('status-bar').style.display = 'flex';
-        document.getElementById('target-name').innerText = characters[charId].name;
+        document.getElementById('target-name').innerText = charData[charId].name;
         updateMeter();
         playScene('start');
     }
 
-    function playScene(sceneKey) {
-        const charScript = getScript(currentTarget);
+    function playScene(sceneKey, feedbackText = null) {
+        const char = charData[currentTarget];
         const msg = document.getElementById('message');
         const btnGroup = document.getElementById('btn-group');
         
-        // 特殊なエンド判定
         if (currentLove >= 100) {
-            msg.innerHTML = `🎉 【HAPPY END】<br>${characters[currentTarget].name}${characters[currentTarget].happyEnd}`;
+            msg.innerHTML = `🎉 【HAPPY END】<br>${char.name}「${char.scenes.happy}」`;
             btnGroup.innerHTML = '<button class="choice" style="grid-column:span 2" onclick="location.reload()">タイトルへ戻る</button>';
             return;
         } else if (currentLove <= 0) {
-            msg.innerHTML = `🚫 【BAD END】<br>${characters[currentTarget].name}「君の免疫、強すぎるんだよ。もう顔も見たくない、アレグラでも飲んでな。」`;
+            msg.innerHTML = `🚫 【BAD END】<br>${char.name}「君とは相性が悪すぎたみたいだ。病院へ行って薬をもらってきなよ。さよなら。」`;
             btnGroup.innerHTML = '<button class="choice" style="grid-column:span 2" onclick="location.reload()">タイトルへ戻る</button>';
             return;
         }
 
-        const scene = (sceneKey === 'next') 
-            ? { text: "「……いい反応だ。もっと君を、ぐちゃぐちゃにしてあげたい。」", options: [{text:"「もっと飛ばして！」", next:"final", change:30}, {text:"「やっぱり帰る」", next:"bad", change:-20}] }
+        const scene = (sceneKey === 'step2_up' || sceneKey === 'step2_down') 
+            ? { text: feedbackText + "<br><br>「さあ、もっと僕を感じて……準備はいい？」", options: [
+                { text: "「全身で受け止める！」", next: "final", change: 35, res: "「くっ……最高だ。君の免疫を壊してあげるよ！」" },
+                { text: "「やっぱり点鼻薬使う」", next: "final", change: -40, res: "「……最後まで冷たいんだな。」" }
+              ] }
             : (sceneKey === 'final')
-            ? { text: "彼はさらに勢いを増して粒子を放ち始めた！", options: [{text:"（深く吸い込む）", next:"win", change:30}] }
-            : charScript[sceneKey];
+            ? { text: feedbackText + "<br><br>――運命の瞬間が訪れる。", options: [
+                { text: "（深く呼吸する）", next: "check", change: 10 }
+              ] }
+            : char.scenes[sceneKey];
 
         msg.innerHTML = scene.text;
         btnGroup.innerHTML = '';
@@ -153,14 +192,14 @@
             btn.onclick = () => {
                 currentLove += opt.change;
                 updateMeter();
-                playScene(opt.next);
+                playScene(opt.next, opt.res);
             };
             btnGroup.appendChild(btn);
         });
         
         const backBtn = document.createElement('button');
         backBtn.className = 'choice';
-        backBtn.innerText = "他の抗原を探す";
+        backBtn.innerText = "他の抗原へ浮気する";
         backBtn.style.gridColumn = "span 2";
         backBtn.onclick = goToSelect;
         btnGroup.appendChild(backBtn);
