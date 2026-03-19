@@ -2,135 +2,124 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Horror Game</title>
+<title>3D風ホラー</title>
 <style>
 body {
   margin: 0;
-  background: black;
-  color: #ddd;
-  font-family: sans-serif;
   overflow: hidden;
+  background: black;
 }
-
-#game {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-#room {
-  width: 600px;
-  height: 350px;
-  background: #111;
-  border: 2px solid #333;
-  position: relative;
-}
-
-.object {
-  position: absolute;
-  border: 1px solid #555;
-  padding: 5px;
-  cursor: pointer;
-}
-
-#door { bottom: 10px; right: 10px; }
-#box { top: 20px; left: 20px; }
-#mirror { top: 20px; right: 20px; }
-
-#textBox {
+canvas { display: block; }
+#text {
   position: absolute;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0,0,0,0.8);
-  padding: 10px 20px;
-  border: 1px solid #444;
-}
-
-#moveHint {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  font-size: 12px;
-  opacity: 0.5;
+  color: white;
+  background: rgba(0,0,0,0.7);
+  padding: 10px;
+  font-size: 14px;
 }
 </style>
 </head>
 <body>
+<div id="text">WASDで移動 / マウスで視点</div>
 
-<div id="game">
-  <div id="room">
-
-    <div id="moveHint">WASDキーで移動 / クリックで調べる</div>
-
-    <div id="player" style="width:15px;height:15px;background:red;position:absolute;left:300px;top:180px;"></div>
-
-    <div id="door" class="object">ドア</div>
-    <div id="box" class="object">箱</div>
-    <div id="mirror" class="object">鏡</div>
-
-  </div>
-
-  <div id="textBox">暗い部屋にいる…</div>
-</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.158/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.158/examples/js/controls/PointerLockControls.js"></script>
 
 <script>
+// シーン
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
 
-const player = document.getElementById('player');
-let x = 300;
-let y = 180;
+// カメラ
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 
-// 移動
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'w') y -= 10;
-  if (e.key === 's') y += 10;
-  if (e.key === 'a') x -= 10;
-  if (e.key === 'd') x += 10;
+// レンダラー
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-  player.style.left = x + 'px';
-  player.style.top = y + 'px';
-});
+// コントロール（FPS視点）
+const controls = new THREE.PointerLockControls(camera, document.body);
+document.body.addEventListener('click', () => controls.lock());
 
-// テキスト表示
-function showText(msg) {
-  document.getElementById('textBox').innerText = msg;
+// ライト
+const light = new THREE.PointLight(0xffffff, 1, 10);
+light.position.set(0,2,0);
+scene.add(light);
+
+// 床
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(20,20),
+  new THREE.MeshBasicMaterial({color: 0x111111})
+);
+floor.rotation.x = -Math.PI/2;
+scene.add(floor);
+
+// 壁
+function createWall(x,z) {
+  const wall = new THREE.Mesh(
+    new THREE.BoxGeometry(1,2,1),
+    new THREE.MeshBasicMaterial({color: 0x222222})
+  );
+  wall.position.set(x,1,z);
+  scene.add(wall);
 }
 
-// オブジェクト調べる
+for(let i=-10;i<10;i++){
+  createWall(i,-10);
+  createWall(i,10);
+  createWall(-10,i);
+  createWall(10,i);
+}
 
-document.getElementById('box').onclick = () => {
-  showText('中は空っぽ…いや、何か動いた？');
-};
+// オブジェクト（怖いポイント）
+const box = new THREE.Mesh(
+  new THREE.BoxGeometry(1,1,1),
+  new THREE.MeshBasicMaterial({color: 0x550000})
+);
+box.position.set(2,0.5,-3);
+scene.add(box);
 
-let mirrorCount = 0;
-document.getElementById('mirror').onclick = () => {
-  mirrorCount++;
-  if (mirrorCount === 1) showText('自分の顔が映っている…');
-  else if (mirrorCount === 2) showText('一瞬、後ろに誰か…');
-  else showText('もう見たくない。');
-};
+// カメラ初期位置
+camera.position.set(0,1.6,5);
 
+// 移動
+const keys = {};
+document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
-document.getElementById('door').onclick = () => {
-  if (Math.random() < 0.5) {
-    showText('ドアは開かない…');
-  } else {
-    showText('ドアが開いた。外は暗い。');
+function move(){
+  const speed = 0.05;
+  if(keys['w']) controls.moveForward(speed);
+  if(keys['s']) controls.moveForward(-speed);
+  if(keys['a']) controls.moveRight(-speed);
+  if(keys['d']) controls.moveRight(speed);
+}
+
+// 距離でイベント
+function checkEvents(){
+  const dist = camera.position.distanceTo(box.position);
+  if(dist < 2){
+    document.getElementById('text').innerText = '箱がある…開ける？（自動）';
+    if(Math.random()<0.01){
+      document.body.style.background = '#200';
+      setTimeout(()=>document.body.style.background='black',100);
+    }
   }
-};
+}
 
-// 不安演出
-setInterval(() => {
-  if (Math.random() < 0.1) {
-    document.body.style.background = '#200';
-    setTimeout(() => document.body.style.background = 'black', 100);
-  }
-}, 1000);
+// ループ
+function animate(){
+  requestAnimationFrame(animate);
+  move();
+  checkEvents();
+  renderer.render(scene,camera);
+}
+animate();
 
 </script>
-
 </body>
 </html>
